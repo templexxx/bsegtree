@@ -174,7 +174,10 @@ func (e endpoints) Swap(i, j int) {
 
 // Dedup removes duplicates from a given slice
 func Dedup(sl endpoints) [][2]int {
-	sort.Sort(sl)
+
+	if !sort.IsSorted(sl) {
+		sort.Sort(sl)
+	}
 
 	cnt := len(sl.positions)
 	cntDup := 0
