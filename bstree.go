@@ -8,7 +8,6 @@ package bsegtree
 import (
 	"bytes"
 	"sort"
-	"sync"
 )
 
 const (
@@ -176,42 +175,21 @@ func (e endpoints) Swap(i, j int) {
 // Dedup removes duplicates from a given slice
 func Dedup(sl endpoints) [][2]int {
 	sort.Sort(sl)
-	unique := make([][2]int, 0, len(sl.positions))
 
-	v := sl.cache[sl.positions[0][0] : sl.positions[0][0]+sl.positions[0][1]]
+	cnt := len(sl.positions)
+	cntDup := 0
+	for i := 1; i < cnt; i++ {
 
-	prev := nextBytes(v) //
-	defer bytesPool.Put(prev[:0])
-	for _, pos := range sl.positions {
-		val := sl.cache[pos[0] : pos[0]+pos[1]]
-		if !bytes.Equal(val, prev) {
-			unique = append(unique, pos)
-			prev = val
+		vi := sl.cache[sl.positions[i][0] : sl.positions[i][0]+sl.positions[i][1]]
+		vip := sl.cache[sl.positions[i-1][0] : sl.positions[i-1][0]+sl.positions[i-1][1]]
+		if bytes.Equal(vi, vip) {
+			cntDup++
+		} else {
+			sl.positions[i-cntDup] = sl.positions[i]
 		}
 	}
-	return unique
-}
 
-var bytesPool = sync.Pool{New: func() interface{} {
-	return make([]byte, 0, 128)
-}}
-
-func nextBytes(b []byte) []byte { // TODO wrong
-
-	p := bytesPool.Get().([]byte)[:len(b)]
-
-	nextBytesBuf(b, p)
-
-	return p
-}
-
-func nextBytesBuf(b, p []byte) (next []byte) {
-	p = append(p, 0) // One more byte for potential overflow.
-
-	p = append(p, b...)
-	p[len(b)-1] += 1
-
-	return p
+	return sl.positions[:cnt-cntDup]
 }
 
 // insertNodes builds tree structure from given endpoints
