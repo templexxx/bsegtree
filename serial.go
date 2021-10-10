@@ -22,25 +22,15 @@ func (t *serial) Build() {
 	panic("Build() not supported for serial data structure")
 }
 
-func (t *serial) Print() {
-	panic("Print() not supported for serial data structure")
-}
-
-func (t *serial) Tree2Array() []SegmentOverlap {
-	panic("Tree2Array() not supported for serial data structure")
-}
-
 // Query interval by looping through the interval stack
-func (t *serial) Query(from, to []byte) []IntervalBytes {
-	result := make([]IntervalBytes, 0, 10)
+func (t *serial) Query(from, to []byte) []int {
+
+	fa, ta := AbbreviatedKey(from), AbbreviatedKey(to)
+
+	result := make([]int, 0, 10)
 	for _, intrvl := range t.base {
-		if !intrvl.Segment.Disjoint(t.intervalCache, from, to) {
-			ib := IntervalBytes{
-				Id:   intrvl.Id,
-				From: t.intervalCache[intrvl.From[0] : intrvl.From[0]+intrvl.From[1]],
-				To:   t.intervalCache[intrvl.To[0] : intrvl.To[0]+intrvl.To[1]],
-			}
-			result = append(result, ib)
+		if !intrvl.Disjoint(fa, ta) {
+			result = append(result, intrvl.id)
 		}
 	}
 	return result
