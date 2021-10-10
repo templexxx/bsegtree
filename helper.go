@@ -63,6 +63,9 @@ func Endpoints(base []interval) (result []uint64, min, max uint64) {
 	return
 }
 
+// Creates a slice of elementary intervals from a slice of (sorted) endpoints
+// Input: [p1, p2, ..., pn]
+// Output: [{p1 : p1}, {p1 : p2}, {p2 : p2},... , {pn : pn}
 func elementaryIntervals(endpoints []uint64) [][2]uint64 {
 	if len(endpoints) == 1 {
 		return [][2]uint64{{endpoints[0], endpoints[0]}}

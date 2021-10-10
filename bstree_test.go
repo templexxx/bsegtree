@@ -74,7 +74,7 @@ func TestTreeEqualSerialSameLenInterval(t *testing.T) {
 
 	rand.Seed(time.Now().UnixNano())
 
-	for j := 0; j < 64; j++ {
+	for j := 0; j < 16; j++ {
 		tree := New()
 		serial := NewSerial()
 
@@ -322,17 +322,6 @@ func BenchmarkBuildMidIntTree(b *testing.B) {
 	}
 }
 
-func TestAbbreviated(t *testing.T) {
-
-	a := "456789124"
-	b := "456789117"
-
-	fmt.Println(bytes.Compare([]byte(a), []byte(b)))
-	fmt.Println(binary.LittleEndian.Uint64([]byte(a)), binary.LittleEndian.Uint64([]byte(b)))
-	fmt.Println(binary.BigEndian.Uint64([]byte(a)), binary.BigEndian.Uint64([]byte(b)))
-
-}
-
 func BenchmarkSearchMidIntTree(b *testing.B) {
 
 	tree := stree.NewTree()
@@ -354,30 +343,59 @@ func BenchmarkSearchMidIntTree(b *testing.B) {
 var tree Tree
 var ser Tree
 
-// func init() {
-// 	tree = New()
-// 	ser = NewSerial()
-//
-// 	minB, maxB := make([]byte, 8), make([]byte, 8)
-// 	for j := 0; j < 100000; j++ {
-// 		min := rand.Int63n(1000000)
-// 		max := rand.Int63n(1000000)
-// 		binary.LittleEndian.PutUint64(minB, uint64(min))
-// 		binary.LittleEndian.PutUint64(maxB, uint64(max))
-//
-// 		if bytes.Compare(minB, maxB) == 1 {
-// 			minB, maxB = maxB, minB
-// 		}
-// 		tree.Push(minB, maxB)
-// 		ser.Push(minB, maxB)
-// 	}
-// 	tree.Build()
-// }
+func init() {
+	tree = New()
+	ser = NewSerial()
+
+	from, to := make([]byte, 8), make([]byte, 8)
+	for j := 0; j < 2048; j += 2 {
+		binary.BigEndian.PutUint64(from, uint64(j))
+		binary.BigEndian.PutUint64(to, uint64(j+1))
+
+		tree.Push(from, to)
+		ser.Push(from, to)
+	}
+	tree.Build()
+}
 
 func BenchmarkQueryTree(b *testing.B) {
+
+	from, to := make([]byte, 8), make([]byte, 8)
+	binary.BigEndian.PutUint64(from, 0)
+	binary.BigEndian.PutUint64(to, 1)
+
 	for i := 0; i < b.N; i++ {
-		tree.Query([]byte{0}, []byte{0})
+		_ = tree.Query(from, to)
 	}
+}
+
+func BenchmarkQueryPoint(b *testing.B) {
+
+	from, to := make([]byte, 8), make([]byte, 8)
+	binary.BigEndian.PutUint64(from, 0)
+	binary.BigEndian.PutUint64(to, 1)
+
+	for i := 0; i < b.N; i++ {
+		_ = tree.QueryPoint(from)
+	}
+}
+
+func TestQuery(t *testing.T) {
+
+	from, to := make([]byte, 8), make([]byte, 8)
+	binary.BigEndian.PutUint64(from, 0)
+	binary.BigEndian.PutUint64(to, 1)
+
+	fmt.Println(tree.Query(from, to))
+}
+
+func TestQueryPoint(t *testing.T) {
+
+	from, to := make([]byte, 8), make([]byte, 8)
+	binary.BigEndian.PutUint64(from, 0)
+	binary.BigEndian.PutUint64(to, 1)
+
+	fmt.Println(tree.QueryPoint(from))
 }
 
 func BenchmarkQuerySerial(b *testing.B) {

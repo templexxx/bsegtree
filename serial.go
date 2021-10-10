@@ -35,3 +35,16 @@ func (t *serial) Query(from, to []byte) []int {
 	}
 	return result
 }
+
+func (t *serial) QueryPoint(p []byte) []int {
+
+	pa := AbbreviatedKey(p)
+
+	result := make([]int, 0, 10)
+	for _, intrvl := range t.base {
+		if intrvl.from <= pa && intrvl.to >= pa {
+			result = append(result, intrvl.id)
+		}
+	}
+	return result
+}

@@ -70,17 +70,101 @@ func (t *BSTree) Query(from, to []byte) []int {
 	if t.root == nil {
 		panic("Can't run query on empty tree. Call Build() first")
 	}
-	result := make(map[int]struct{}) // Using map to remove redundant
+
+	var result []int
+
+	result = make([]int, 0, 1)
 
 	fa, ta := AbbreviatedKey(from), AbbreviatedKey(to)
 
 	querySingle(t.root, fa, ta, &result)
 
-	ids := make([]int, 0, len(result))
-	for id := range result {
-		ids = append(ids, id)
+	// on small result-set, we check for duplicates without allocation.
+	// https://github.com/toberndo/go-stree/pull/5/files
+	if len(result) < 2 || (len(result) == 2 && result[0] != result[1]) || (len(result) == 3 && result[0] != result[1] && result[0] != result[2] && result[1] != result[2]) {
+		return result
 	}
-	return ids
+
+	// on larger sets, use a map.
+	m := make(map[int]struct{})
+	for _, id := range result {
+		m[id] = struct{}{}
+	}
+	if len(m) == len(result) {
+		return result
+	}
+	result = result[:0]
+	for id := range m {
+		result = append(result, id)
+	}
+
+	return result
+}
+
+// querySingle traverse tree in search of overlaps
+func querySingle(node *node, from, to uint64, result *[]int) {
+
+	if !node.Disjoint(from, to) {
+
+		for _, interval := range node.overlap {
+
+			*result = append(*result, interval.id)
+		}
+		if node.right != nil {
+			querySingle(node.right, from, to, result)
+		}
+		if node.left != nil {
+			querySingle(node.left, from, to, result)
+		}
+	}
+}
+
+func (t *BSTree) QueryPoint(p []byte) []int {
+
+	if t.root == nil {
+		panic("Can't run query on empty tree. Call Build() first")
+	}
+
+	pa := AbbreviatedKey(p)
+	result := make([]int, 0, 1)
+
+	queryPoint(t.root, pa, &result)
+
+	// on small result-set, we check for duplicates without allocation.
+	// https://github.com/toberndo/go-stree/pull/5/files
+	if len(result) < 2 || (len(result) == 2 && result[0] != result[1]) || (len(result) == 3 && result[0] != result[1] && result[0] != result[2] && result[1] != result[2]) {
+		return result
+	}
+
+	// on larger sets, use a map.
+	m := make(map[int]struct{})
+	for _, id := range result {
+		m[id] = struct{}{}
+	}
+	if len(m) == len(result) {
+		return result
+	}
+	result = result[:0]
+	for id := range m {
+		result = append(result, id)
+	}
+
+	return result
+}
+
+func queryPoint(node *node, p uint64, result *[]int) {
+
+	if node.from <= p && node.to >= p {
+		for _, interval := range node.overlap {
+			*result = append(*result, interval.id)
+		}
+		if node.left != nil {
+			queryPoint(node.left, p, result)
+		}
+		if node.right != nil {
+			queryPoint(node.right, p, result)
+		}
+	}
 }
 
 // Clear reset Tree.
@@ -108,22 +192,4 @@ func (t *BSTree) insertNodes(ls [][2]uint64) *node {
 		n.right = t.insertNodes(ls[center:])
 	}
 	return n
-}
-
-// querySingle traverse tree in search of overlaps
-func querySingle(node *node, from, to uint64, result *map[int]struct{}) {
-
-	if !node.Disjoint(from, to) {
-
-		for _, pintrvl := range node.overlap {
-
-			(*result)[pintrvl.id] = struct{}{}
-		}
-		if node.right != nil {
-			querySingle(node.right, from, to, result)
-		}
-		if node.left != nil {
-			querySingle(node.left, from, to, result)
-		}
-	}
 }

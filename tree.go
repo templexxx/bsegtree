@@ -17,6 +17,8 @@ type Tree interface {
 	Build()
 	// Query interval, return interval id.
 	Query(from, to []byte) []int
+	// QueryPoint queries a pont, return all intervals contains this point.
+	QueryPoint(p []byte) []int
 	// Clear reset Tree.
 	Clear()
 }
