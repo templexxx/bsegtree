@@ -4,7 +4,9 @@ Segment tree for bytes in Go
 Based on [Thomas Oberndörfer's int range segment tree](https://github.com/toberndo/go-stree) with fixing/optimization/modification for bytes ranges.
 
 1. For build once, query many models
-2. Not design for big data set
+2. Not design for big data set 
+(better for <= 1024 intervals, otherwise the cost will be quite high when query a big range. Bench it before using. 
+For small count intervals. e.g., 1024, the point query will be ~100ns if only one interval id will be returned)
 3. Not design for interval has long bytes as range
 4. Using pseudo-codes in [Computational Geometry: Algorithms and Applications, INSERTSEGMENTTREE](http://www.cs.uu.nl/geobook/pseudo.pdf) &
 codes in [another segment tree implementation](https://github.com/seppestas/go-segtree) to fix

@@ -8,8 +8,6 @@ import (
 	"sort"
 	"testing"
 	"time"
-
-	"github.com/toberndo/go-stree/stree"
 )
 
 func TestDedup(t *testing.T) {
@@ -112,7 +110,7 @@ func TestTreeEqualSerialSameLenInterval(t *testing.T) {
 		}
 		tree.Build()
 
-		cmpQueryWithSerial(t, tree, serial, min, max, 1024, true)
+		cmpQueryWithSerial(t, tree, serial, min, max, 1024, true, false)
 
 		for i := 0; i < 1024; i++ {
 			min := rand.Int63n(1000000)
@@ -124,14 +122,104 @@ func TestTreeEqualSerialSameLenInterval(t *testing.T) {
 				from, to = to, from
 			}
 
-			cmpQueryWithSerial(t, tree, serial, from, to, 0, false)
+			cmpQueryWithSerial(t, tree, serial, from, to, 0, false, false)
+			cmpQueryWithSerial(t, tree, serial, from, nil, 0, false, true)
 		}
 	}
 }
 
-func cmpQueryWithSerial(t *testing.T, tree, serial Tree, from, to []byte, expN int, checkExpN bool) {
+// Test segment tree result with serial query:
+// [from, to] for every interval is 1-10 bytes.
+func TestTreeEqualSerialInterval(t *testing.T) {
 
-	treeresult := tree.Query(from, to)
+	rand.Seed(time.Now().UnixNano())
+
+	for j := 0; j < 16; j++ {
+		tree := New()
+		serial := NewSerial()
+
+		from, to := make([]byte, 10), make([]byte, 10)
+		min, max := make([]byte, 10), make([]byte, 10)
+		minN, maxN := 0, 0
+		hasMin, hasMax := false, false
+		for i := 0; i < 1024; i++ {
+
+			from, to = from[:10], to[:10]
+
+			fn, tn := rand.Intn(11), rand.Intn(11)
+			if fn == 0 {
+				fn = 1
+			}
+			if tn == 0 {
+				tn = 2
+			}
+			from, to = from[:fn], to[:tn]
+			rand.Read(from)
+			rand.Read(to)
+
+			if bytes.Compare(from, to) == 1 {
+				from, to = to, from
+			}
+			tree.Push(from, to)
+			serial.Push(from, to)
+
+			if !hasMin {
+				copy(min, from)
+				hasMin = true
+				minN = len(from)
+			} else {
+				if bytes.Compare(min, from) == 1 {
+					copy(min, from)
+					minN = len(from)
+				}
+			}
+			if !hasMax {
+				copy(max, to)
+				hasMax = true
+				maxN = len(to)
+			} else {
+				if bytes.Compare(max, to) == -1 {
+					copy(max, to)
+					maxN = len(to)
+				}
+			}
+		}
+		tree.Build()
+
+		cmpQueryWithSerial(t, tree, serial, min[:minN], max[:maxN], 1024, true, false)
+
+		for i := 0; i < 1024; i++ {
+			from, to = from[:10], to[:10]
+
+			fn, tn := rand.Intn(11), rand.Intn(11)
+			if fn == 0 {
+				fn = 1
+			}
+			if tn == 0 {
+				tn = 2
+			}
+			from, to = from[:fn], to[:tn]
+			rand.Read(from)
+			rand.Read(to)
+
+			if bytes.Compare(from, to) == 1 {
+				from, to = to, from
+			}
+
+			cmpQueryWithSerial(t, tree, serial, from, to, 0, false, false)
+			cmpQueryWithSerial(t, tree, serial, from, nil, 0, false, true)
+		}
+	}
+}
+
+func cmpQueryWithSerial(t *testing.T, tree, serial Tree, from, to []byte, expN int, checkExpN, isPoint bool) {
+
+	var treeresult []int
+	if !isPoint {
+		treeresult = tree.Query(from, to)
+	} else {
+		treeresult = tree.QueryPoint(from)
+	}
 
 	if checkExpN {
 
@@ -140,33 +228,17 @@ func cmpQueryWithSerial(t *testing.T, tree, serial Tree, from, to []byte, expN i
 		}
 	}
 
-	serialresult := serial.Query(from, to)
+	var serialresult []int
+	if !isPoint {
+		serialresult = serial.Query(from, to)
+	} else {
+		serialresult = serial.QueryPoint(from)
+	}
 
 	sort.Ints(treeresult)
 	sort.Ints(serialresult)
 
 	if len(treeresult) != len(serialresult) {
-
-		base := tree.(*BSTree).base
-
-		missing := make([]int, 0, 1024)
-
-		for _, v := range serialresult {
-			has := false
-			for _, vv := range treeresult {
-				if vv == v {
-					has = true
-					break
-				}
-			}
-			if !has {
-				missing = append(missing, v)
-			}
-		}
-
-		for _, m := range missing {
-			fmt.Println(base[m])
-		}
 
 		t.Fatalf("wrong result length, exp: %d, got: %d for from: %d, to: %d",
 			len(serialresult), len(treeresult), AbbreviatedKey(from), AbbreviatedKey(to))
@@ -199,7 +271,7 @@ func TestMissingResult(t *testing.T) {
 	st := NewSerial()
 	st.(*serial).base = tree.(*BSTree).base
 
-	cmpQueryWithSerial(t, tree, st, from, to, 0, false)
+	cmpQueryWithSerial(t, tree, st, from, to, 0, false, false)
 }
 
 func TestMinimalTree(t *testing.T) {
@@ -284,7 +356,7 @@ func BenchmarkBuildSmallTree(b *testing.B) {
 	}
 }
 
-// Re-build a tree with 1024 ranges (no overlap)
+// Re-build a tree with 1024 ranges (no same element)
 func BenchmarkBuildMidTree(b *testing.B) {
 
 	tree := New()
@@ -308,38 +380,6 @@ func BenchmarkBuildMidTree(b *testing.B) {
 	}
 }
 
-func BenchmarkBuildMidIntTree(b *testing.B) {
-
-	tree := stree.NewTree()
-
-	for i := 0; i < 2048; i += 2 {
-		tree.Push(i, i+1)
-	}
-
-	for i := 0; i < b.N; i++ {
-
-		tree.BuildTree()
-	}
-}
-
-func BenchmarkSearchMidIntTree(b *testing.B) {
-
-	tree := stree.NewTree()
-
-	for i := 0; i < 1024; i += 2 {
-		tree.Push(i, i+1)
-	}
-
-	tree.BuildTree()
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-
-		tree.Query(0, 1)
-	}
-}
-
 var tree Tree
 var ser Tree
 
@@ -358,11 +398,11 @@ func init() {
 	tree.Build()
 }
 
-func BenchmarkQueryTree(b *testing.B) {
+func BenchmarkQueryFullTree(b *testing.B) {
 
 	from, to := make([]byte, 8), make([]byte, 8)
 	binary.BigEndian.PutUint64(from, 0)
-	binary.BigEndian.PutUint64(to, 1)
+	binary.BigEndian.PutUint64(to, 2048)
 
 	for i := 0; i < b.N; i++ {
 		_ = tree.Query(from, to)
@@ -380,114 +420,26 @@ func BenchmarkQueryPoint(b *testing.B) {
 	}
 }
 
-func TestQuery(t *testing.T) {
+func BenchmarkQueryFullTreeSerial(b *testing.B) {
 
 	from, to := make([]byte, 8), make([]byte, 8)
 	binary.BigEndian.PutUint64(from, 0)
-	binary.BigEndian.PutUint64(to, 1)
+	binary.BigEndian.PutUint64(to, 2048)
 
-	fmt.Println(tree.Query(from, to))
-}
+	fmt.Println(len(ser.Query(from, to)))
 
-func TestQueryPoint(t *testing.T) {
-
-	from, to := make([]byte, 8), make([]byte, 8)
-	binary.BigEndian.PutUint64(from, 0)
-	binary.BigEndian.PutUint64(to, 1)
-
-	fmt.Println(tree.QueryPoint(from))
-}
-
-func BenchmarkQuerySerial(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		ser.Query([]byte{0}, []byte{0})
+		_ = ser.Query(from, to)
 	}
 }
 
-//
-// func BenchmarkQueryTreeMax(b *testing.B) {
-// 	for i := 0; i < b.N; i++ {
-// 		tree.Query(0, math.MaxInt32)
-// 	}
-// }
-//
-// func BenchmarkQuerySerialMax(b *testing.B) {
-// 	for i := 0; i < b.N; i++ {
-// 		ser.Query(0, math.MaxInt32)
-// 	}
-// }
-//
-// func BenchmarkQueryTreeArray(b *testing.B) {
-// 	from := []int{0, 1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000}
-// 	to := []int{10, 1000010, 2000010, 3000010, 4000010, 5000010, 6000010, 7000010, 8000010, 9000010}
-// 	for i := 0; i < b.N; i++ {
-// 		tree.QueryArray(from, to)
-// 	}
-// }
-//
-// func BenchmarkQuerySerialArray(b *testing.B) {
-// 	from := []int{0, 1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000}
-// 	to := []int{10, 1000010, 2000010, 3000010, 4000010, 5000010, 6000010, 7000010, 8000010, 9000010}
-// 	for i := 0; i < b.N; i++ {
-// 		ser.QueryArray(from, to)
-// 	}
-// }
-//
-// func buildTree(b *testing.B, tree Tree, count int) {
-// 	for i := 0; i < b.N; i++ {
-// 		b.StopTimer()
-// 		tree.Clear()
-// 		pushRandom(tree, count)
-// 		b.StartTimer()
-// 		tree.BuildTree()
-// 	}
-// }
-//
-// func pushRandom(tree Tree, count int) {
-// 	for j := 0; j < count; j++ {
-// 		min := rand.Int()
-// 		max := rand.Int()
-// 		if min > max {
-// 			min, max = max, min
-// 		}
-// 		tree.Push(min, max)
-// 	}
-// }
-//
-// func BenchmarkEndpoints100000(b *testing.B) {
-// 	for i := 0; i < b.N; i++ {
-// 		b.StopTimer()
-// 		tree := New().(*stree)
-// 		pushRandom(tree, 100000)
-// 		b.StartTimer()
-// 		Endpoints(tree.base)
-// 	}
-// }
-//
-// func BenchmarkInsertNodes100000(b *testing.B) {
-// 	for i := 0; i < b.N; i++ {
-// 		b.StopTimer()
-// 		tree := New().(*stree)
-// 		pushRandom(tree, 100000)
-// 		var endpoint []int
-// 		endpoint, tree.min, tree.max = Endpoints(tree.base)
-// 		//fmt.Println(len(endpoint))
-// 		b.StartTimer()
-// 		tree.root = tree.insertNodes(endpoint)
-// 	}
-// }
-//
-// func BenchmarkInsertIntervals100000(b *testing.B) {
-// 	for i := 0; i < b.N; i++ {
-// 		b.StopTimer()
-// 		tree := New().(*stree)
-// 		pushRandom(tree, 100000)
-// 		var endpoint []int
-// 		endpoint, tree.min, tree.max = Endpoints(tree.base)
-// 		tree.root = tree.insertNodes(endpoint)
-// 		b.StartTimer()
-// 		for i := range tree.base {
-// 			insertInterval(tree.root, &tree.base[i])
-// 		}
-// 	}
-// }
+func BenchmarkQueryPointSerial(b *testing.B) {
+
+	from, to := make([]byte, 8), make([]byte, 8)
+	binary.BigEndian.PutUint64(from, 0)
+	binary.BigEndian.PutUint64(to, 1)
+
+	for i := 0; i < b.N; i++ {
+		_ = ser.QueryPoint(from)
+	}
+}
