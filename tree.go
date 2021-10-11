@@ -21,6 +21,10 @@ type Tree interface {
 	QueryPoint(p []byte) []int
 	// Clear reset Tree.
 	Clear()
+
+	// Clone this tree to a new one.
+	// Build the new tree before query.
+	Clone() Tree
 }
 
 // AbbreviatedKey returns a fixed length prefix of a user key such that AbbreviatedKey(a)

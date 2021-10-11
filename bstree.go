@@ -241,6 +241,28 @@ func (t *BSTree) Clear() {
 	t.disjointPoint = 0
 }
 
+func (t *BSTree) Clone() Tree {
+
+	nt := &BSTree{
+		count:         t.count,
+		root:          nil,
+		base:          make([]interval, 0, 1024),
+		min:           t.min,
+		max:           t.max,
+		totalDeltas:   t.totalDeltas,
+		disjointPoint: t.disjointPoint,
+	}
+
+	for _, i := range t.base {
+		nt.base = append(nt.base, interval{
+			id:   i.id,
+			from: i.from,
+			to:   i.to,
+		})
+	}
+	return nt
+}
+
 // insertNodes builds tree structure from given endpoints
 func (t *BSTree) insertNodes(ls [][2]uint64) *node {
 	var n *node

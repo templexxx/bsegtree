@@ -346,6 +346,15 @@ func TestNormalTree(t *testing.T) {
 			t.Errorf("fail query multiple tree for (%s, %s), exp: %d, got: %d", k, k, v, len(result))
 		}
 	}
+
+	ct := tree.Clone()
+	ct.Build()
+
+	for k, v := range qvalid {
+		if result := ct.Query([]byte(k), []byte(k)); len(result) != v {
+			t.Errorf("fail query multiple tree for (%s, %s), exp: %d, got: %d", k, k, v, len(result))
+		}
+	}
 }
 
 func BenchmarkBuildSmallTree(b *testing.B) {
