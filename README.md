@@ -21,25 +21,31 @@ wrong query result for some corner cases. See `func TestMissingResult(t *testing
 ## Pefromance
 
 ```shell
-➜  bsegtree git:(main) go test -v -run=^a -bench=.
+➜  bsegtree git:(main) ✗ go test -v -run=^a -bench=.
 goos: darwin
 goarch: amd64
 pkg: github.com/templexxx/bsegtree
 cpu: Intel(R) Core(TM) i7-7700HQ CPU @ 2.80GHz
 BenchmarkBuildSmallTree
-BenchmarkBuildSmallTree-8        	  278991	      3999 ns/op
+BenchmarkBuildSmallTree-8        	  277869	      3983 ns/op
 BenchmarkBuildMidTree
-BenchmarkBuildMidTree-8          	    1300	    901817 ns/op
+BenchmarkBuildMidTree-8          	    1310	    900920 ns/op
 BenchmarkQueryFullTree
-BenchmarkQueryFullTree-8         	    5943	    190505 ns/op
+BenchmarkQueryFullTree-8         	    5900	    191030 ns/op
+BenchmarkQueryPartTree
+BenchmarkQueryPartTree-8         	  794811	      1453 ns/op
 BenchmarkQueryPoint
-BenchmarkQueryPoint-8            	10252111	       113.8 ns/op
+BenchmarkQueryPoint-8            	 9096208	       126.7 ns/op
 BenchmarkQueryFullTreeSerial
-BenchmarkQueryFullTreeSerial-8   	  168470	      6559 ns/op
+BenchmarkQueryFullTreeSerial-8   	  167599	      6600 ns/op
+BenchmarkQueryPartTreeSerial
+BenchmarkQueryPartTreeSerial-8   	  829184	      1453 ns/op
 BenchmarkQueryPointSerial
-BenchmarkQueryPointSerial-8      	 1226923	       972.2 ns/op
+BenchmarkQueryPointSerial-8      	 1000000	      1125 ns/op
 PASS
-ok  	github.com/templexxx/bsegtree	8.899s
+ok  	github.com/templexxx/bsegtree	10.825s
 ```
 
-For point query (1024 intervals) the result is good enough.
+For point query (1024 intervals) for 1 interval result is good enough.
+
+But for more than 8 interval result (1024 intervals) the serial begins to be better.

@@ -408,11 +408,22 @@ func BenchmarkQueryFullTree(b *testing.B) {
 	}
 }
 
-func BenchmarkQueryPoint(b *testing.B) {
+// <= 4 result
+func BenchmarkQueryPartTree(b *testing.B) {
 
 	from, to := make([]byte, 8), make([]byte, 8)
 	binary.BigEndian.PutUint64(from, 0)
-	binary.BigEndian.PutUint64(to, 1)
+	binary.BigEndian.PutUint64(to, 16)
+
+	for i := 0; i < b.N; i++ {
+		_ = tree.Query(from, to)
+	}
+}
+
+func BenchmarkQueryPoint(b *testing.B) {
+
+	from := make([]byte, 8)
+	binary.BigEndian.PutUint64(from, uint64(rand.Intn(2048)))
 
 	for i := 0; i < b.N; i++ {
 		_ = tree.QueryPoint(from)
@@ -430,11 +441,22 @@ func BenchmarkQueryFullTreeSerial(b *testing.B) {
 	}
 }
 
-func BenchmarkQueryPointSerial(b *testing.B) {
+// <= 4 result
+func BenchmarkQueryPartTreeSerial(b *testing.B) {
 
 	from, to := make([]byte, 8), make([]byte, 8)
 	binary.BigEndian.PutUint64(from, 0)
-	binary.BigEndian.PutUint64(to, 1)
+	binary.BigEndian.PutUint64(to, 16)
+
+	for i := 0; i < b.N; i++ {
+		_ = tree.Query(from, to)
+	}
+}
+
+func BenchmarkQueryPointSerial(b *testing.B) {
+
+	from := make([]byte, 8)
+	binary.BigEndian.PutUint64(from, uint64(rand.Intn(2048)))
 
 	for i := 0; i < b.N; i++ {
 		_ = ser.QueryPoint(from)
