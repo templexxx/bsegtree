@@ -3,7 +3,6 @@ package bsegtree
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"math/rand"
 	"sort"
 	"testing"
@@ -425,8 +424,6 @@ func BenchmarkQueryFullTreeSerial(b *testing.B) {
 	from, to := make([]byte, 8), make([]byte, 8)
 	binary.BigEndian.PutUint64(from, 0)
 	binary.BigEndian.PutUint64(to, 2048)
-
-	fmt.Println(len(ser.Query(from, to)))
 
 	for i := 0; i < b.N; i++ {
 		_ = ser.Query(from, to)
