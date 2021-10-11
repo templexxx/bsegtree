@@ -90,8 +90,9 @@ func (t *BSTree) Build() {
 
 // Query interval, return interval id.
 func (t *BSTree) Query(from, to []byte) []int {
+	
 	if t.root == nil {
-		panic("Can't run query on empty tree. Call Build() first")
+		return nil
 	}
 
 	fa, ta := AbbreviatedKey(from), AbbreviatedKey(to)
