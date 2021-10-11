@@ -3,6 +3,7 @@ package bsegtree
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"math/rand"
 	"sort"
 	"testing"
@@ -63,6 +64,16 @@ func (e bytess) Less(i, j int) bool {
 
 func (e bytess) Swap(i, j int) {
 	e[i], e[j] = e[j], e[i]
+}
+
+func TestTreeEstimateIntervals(t *testing.T) {
+
+	for i := 0; i < 2048; i += 2 {
+		cnt := tree.(*BSTree).estimateIntervals(0, uint64(i))
+		if cnt != i/2 +1 {
+			t.Fatalf("estimate intervals wrong, exp: %d, got: %d for to: %d", i/2+1, cnt, i)
+		}
+	}
 }
 
 // Test segment tree result with serial query:
@@ -408,15 +419,46 @@ func BenchmarkQueryFullTree(b *testing.B) {
 	}
 }
 
-// <= 4 result
-func BenchmarkQueryPartTree(b *testing.B) {
+
+func BenchmarkQueryFullTreeSerial(b *testing.B) {
 
 	from, to := make([]byte, 8), make([]byte, 8)
 	binary.BigEndian.PutUint64(from, 0)
-	binary.BigEndian.PutUint64(to, 16)
+	binary.BigEndian.PutUint64(to, 2048)
 
 	for i := 0; i < b.N; i++ {
-		_ = tree.Query(from, to)
+		_ = ser.Query(from, to)
+	}
+}
+
+func BenchmarkQueryPartTree(b *testing.B) {
+
+	for i := 1; i <= 1024; i *= 4 {
+		b.Run(fmt.Sprintf("%d result", i), func(b *testing.B) {
+			benchmarkQueryPart(b, tree, i)
+		})
+	}
+}
+
+func BenchmarkQueryPartTreeSerial(b *testing.B) {
+
+	for i := 1; i <= 1024; i *= 4 {
+		b.Run(fmt.Sprintf("%d result", i), func(b *testing.B) {
+			benchmarkQueryPart(b, ser, i)
+		})
+	}
+}
+
+func benchmarkQueryPart(b *testing.B, t Tree, c int) {
+
+	from, to := make([]byte, 8), make([]byte, 8)
+
+	binary.BigEndian.PutUint64(from, 0)
+	binary.BigEndian.PutUint64(to, uint64((c-1)*2))
+
+
+	for i := 0; i < b.N; i++ {
+		_ = t.Query(from, to)
 	}
 }
 
@@ -430,28 +472,6 @@ func BenchmarkQueryPoint(b *testing.B) {
 	}
 }
 
-func BenchmarkQueryFullTreeSerial(b *testing.B) {
-
-	from, to := make([]byte, 8), make([]byte, 8)
-	binary.BigEndian.PutUint64(from, 0)
-	binary.BigEndian.PutUint64(to, 2048)
-
-	for i := 0; i < b.N; i++ {
-		_ = ser.Query(from, to)
-	}
-}
-
-// <= 4 result
-func BenchmarkQueryPartTreeSerial(b *testing.B) {
-
-	from, to := make([]byte, 8), make([]byte, 8)
-	binary.BigEndian.PutUint64(from, 0)
-	binary.BigEndian.PutUint64(to, 16)
-
-	for i := 0; i < b.N; i++ {
-		_ = tree.Query(from, to)
-	}
-}
 
 func BenchmarkQueryPointSerial(b *testing.B) {
 
@@ -460,5 +480,56 @@ func BenchmarkQueryPointSerial(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		_ = ser.QueryPoint(from)
+	}
+}
+
+func BenchmarkQueryPointSerialCapacity(b *testing.B) {
+
+	t := NewSerial()
+	p := make([]byte, 8)
+	binary.BigEndian.PutUint64(p, 1)
+
+	for i := 4; i <= 1024; i *= 4 {
+
+		b.Run(fmt.Sprintf("%d", i), func(b *testing.B) {
+			benchmarkQueryPointCapacity(b, t, p, i)
+		})
+	}
+
+}
+
+func BenchmarkQueryPointCapacity(b *testing.B) {
+
+	t := New()
+	p := make([]byte, 8)
+	binary.BigEndian.PutUint64(p, 1)
+
+	for i := 4; i <= 1024; i *= 4 {
+
+
+		b.Run(fmt.Sprintf("%d", i), func(b *testing.B) {
+
+			benchmarkQueryPointCapacity(b, t, p, i)
+		})
+
+	}
+}
+
+func benchmarkQueryPointCapacity(b *testing.B, t Tree, point []byte, c int) {
+
+	from, to := make([]byte, 8), make([]byte, 8)
+	for j := 0; j < c*2; j += 2 {
+		binary.BigEndian.PutUint64(from, uint64(j))
+		binary.BigEndian.PutUint64(to, uint64(j+1))
+
+		t.Push(from, to)
+	}
+	t.Build()
+	defer t.Clear()
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_ = t.QueryPoint(point)
 	}
 }

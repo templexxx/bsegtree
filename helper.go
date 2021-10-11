@@ -1,6 +1,7 @@
 package bsegtree
 
 import (
+	"math"
 	"sort"
 )
 
@@ -134,30 +135,13 @@ func (n *node) insertInterval(i interval) {
 			n.right.insertInterval(i)
 		}
 	}
+}
 
-	// switch node.CompareTo(n) {
-	// case SUBSET:
-	// 	// interval of node is a subset of the specified interval or equal
-	// 	if node.overlap == nil {
-	// 		node.overlap = make([]interval, 0, 2)
-	// 	}
-	//
-	// 	node.overlap = append(node.overlap, n)
-	//
-	// 	if n.id == 369 || n.id == 457 {
-	//
-	// 		fmt.Println(node, n, "fuck2")
-	// 	}
-	//
-	// case INTERSECT_OR_SUPERSET:
-	// 	// interval of node is a superset, have to look in both children
-	// 	if node.left != nil {
-	// 		insertInterval(node.left, n)
-	// 	}
-	// 	if node.right != nil {
-	// 		insertInterval(node.right, n)
-	// 	}
-	// case DISJOINT:
-	// 	// nothing to do
-	// }
+// round rounds a float64 and cuts it by n.
+// n: decimal places.
+// e.g.
+// f = 1.001, n = 2, return 1.00
+func round(f float64, n int) float64 {
+	pow10n := math.Pow10(n)
+	return math.Trunc(f*pow10n+0.5) / pow10n
 }

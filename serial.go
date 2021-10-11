@@ -19,7 +19,7 @@ func NewSerial() Tree {
 }
 
 func (t *serial) Build() {
-	panic("Build() not supported for serial data structure")
+	return
 }
 
 // Query interval by looping through the interval stack
@@ -27,10 +27,10 @@ func (t *serial) Query(from, to []byte) []int {
 
 	fa, ta := AbbreviatedKey(from), AbbreviatedKey(to)
 
-	result := make([]int, 0, 10)
-	for _, intrvl := range t.base {
-		if !intrvl.Disjoint(fa, ta) {
-			result = append(result, intrvl.id)
+	result := make([]int, 0, t.estimateIntervals(fa, ta))
+	for _, i := range t.base {
+		if !i.Disjoint(fa, ta) {
+			result = append(result, i.id)
 		}
 	}
 	return result
@@ -40,10 +40,10 @@ func (t *serial) QueryPoint(p []byte) []int {
 
 	pa := AbbreviatedKey(p)
 
-	result := make([]int, 0, 10)
-	for _, intrvl := range t.base {
-		if intrvl.from <= pa && intrvl.to >= pa {
-			result = append(result, intrvl.id)
+	result := make([]int, 0, t.estimateIntervals(pa, pa))
+	for _, i := range t.base {
+		if i.from <= pa && i.to >= pa {
+			result = append(result, i.id)
 		}
 	}
 	return result
