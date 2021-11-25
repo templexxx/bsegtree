@@ -11,16 +11,16 @@ type node struct {
 
 	left, right *node
 
-	overlap []interval
+	overlap []Interval
 }
 
-func (n *node) CompareTo(other interval) int {
+func (n *node) CompareTo(other Interval) int {
 
-	if other.from > n.to || other.to < n.from {
+	if other.From > n.to || other.To < n.from {
 		return DISJOINT
 	}
 
-	if other.from <= n.from && other.to >= n.to {
+	if other.From <= n.from && other.To >= n.to {
 		return SUBSET
 	}
 
@@ -35,30 +35,30 @@ func (n *node) Disjoint(from, to uint64) bool {
 	return false
 }
 
-type interval struct {
-	id   int // unique
-	from uint64
-	to   uint64
+type Interval struct {
+	ID   int // unique
+	From uint64
+	To   uint64
 }
 
 // Disjoint returns true if Segment does not overlap with interval
-func (p interval) Disjoint(from, to uint64) bool {
+func (p Interval) Disjoint(from, to uint64) bool {
 
-	if from > p.to || to < p.from {
+	if from > p.To || to < p.From {
 		return true
 	}
 	return false
 }
 
 // Endpoints returns a slice with all endpoints (sorted, unique)
-func Endpoints(base []interval) (result []uint64, min, max uint64) {
+func Endpoints(base []Interval) (result []uint64, min, max uint64) {
 	baseLen := len(base)
-	endpoints := make([]uint64, baseLen*2)
+	points := make([]uint64, baseLen*2)
 	for i, interval := range base {
-		endpoints[i] = interval.from
-		endpoints[i+baseLen] = interval.to
+		points[i] = interval.From
+		points[i+baseLen] = interval.To
 	}
-	result = Dedup(endpoints)
+	result = Dedup(points)
 	min = result[0]
 	max = result[len(result)-1]
 	return
@@ -118,12 +118,12 @@ func Dedup(e []uint64) []uint64 {
 }
 
 // Inserts interval into given tree structure
-func (n *node) insertInterval(i interval) {
+func (n *node) insertInterval(i Interval) {
 
 	if n.CompareTo(i) == SUBSET {
 		// interval of node is a subset of the specified interval or equal
 		if n.overlap == nil {
-			n.overlap = make([]interval, 0, 2)
+			n.overlap = make([]Interval, 0, 2)
 		}
 		n.overlap = append(n.overlap, i)
 

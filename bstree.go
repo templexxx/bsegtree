@@ -13,17 +13,21 @@ type BSTree struct {
 	count int // Number of intervals
 	root  *node
 	// interval stack
-	base []interval
+	base []Interval
 	// Min value of all intervals
 	min uint64
 	// Max value of all intervals
 	max uint64
 
-	// sum of to - from in intervals.
+	// sum of To - from in intervals.
 	totalDeltas uint64
 
 	// (max - min) / totalDeltas
 	disjointPoint float64
+}
+
+func (t *BSTree) GetAll() []Interval {
+	return t.base
 }
 
 // Relations of two intervals
@@ -40,14 +44,14 @@ func New() Tree {
 	return t
 }
 
-// Push new interval [from, to] to stack
+// Push new interval [from, To] To stack
 // This new interval will be added after Build.
 func (t *BSTree) Push(from, to []byte) {
 
 	fa := AbbreviatedKey(from)
 	ta := AbbreviatedKey(to)
 
-	t.base = append(t.base, interval{t.count, fa, ta})
+	t.base = append(t.base, Interval{t.count, fa, ta})
 	t.count++
 
 	if ta > t.max {
@@ -64,7 +68,7 @@ func (t *BSTree) Push(from, to []byte) {
 	}
 }
 
-// PushArray push new intervals [from, to] to stack.
+// PushArray push new intervals [from, To] To stack.
 // These new intervals will be added after Build.
 func (t *BSTree) PushArray(from, to [][]byte) {
 	for i := 0; i < len(from); i++ {
@@ -76,7 +80,7 @@ func (t *BSTree) PushArray(from, to [][]byte) {
 func (t *BSTree) Build() {
 
 	if len(t.base) == 0 {
-		panic("No intervals in stack to build tree. Push intervals first")
+		panic("No intervals in stack To build tree. Push intervals first")
 	}
 	var endpoint []uint64
 	endpoint, t.min, t.max = Endpoints(t.base)
@@ -90,7 +94,7 @@ func (t *BSTree) Build() {
 
 // Query interval, return interval id.
 func (t *BSTree) Query(from, to []byte) []int {
-	
+
 	if t.root == nil {
 		return nil
 	}
@@ -110,7 +114,7 @@ func (t *BSTree) Query(from, to []byte) []int {
 		result := make([]int, 0, cnt)
 		for _, i := range t.base {
 			if !i.Disjoint(fa, ta) {
-				result = append(result, i.id)
+				result = append(result, i.ID)
 			}
 		}
 		return result
@@ -119,7 +123,7 @@ func (t *BSTree) Query(from, to []byte) []int {
 	result := make([]int, 0, cnt)
 
 	var bm bitmap.Bitmap
-	if cnt != 1 {	// There is no need to check repeated result when there will be only 1 interval.
+	if cnt != 1 {	// There is no need To check repeated result when there will be only 1 interval.
 		bm = bitmap.New(t.count)
 	}
 
@@ -161,12 +165,12 @@ func querySingle(node *node, from, to uint64, result *[]int, bm *bitmap.Bitmap) 
 
 		for _, i := range node.overlap {
 			if bm != nil {
-				if !bm.Get(i.id) {
-					*result = append(*result, i.id)
-					bm.Set(i.id, true)
+				if !bm.Get(i.ID) {
+					*result = append(*result, i.ID)
+					bm.Set(i.ID, true)
 				}
 			} else {
-				*result = append(*result, i.id)
+				*result = append(*result, i.ID)
 			}
 		}
 		if node.right != nil {
@@ -218,7 +222,7 @@ func queryPoint(node *node, p uint64, result *[]int) {
 
 	if node.from <= p && node.to >= p {
 		for _, i := range node.overlap {
-			*result = append(*result, i.id)
+			*result = append(*result, i.ID)
 		}
 		if node.left != nil {
 			queryPoint(node.left, p, result)
@@ -247,7 +251,7 @@ func (t *BSTree) Clone() Tree {
 	nt := &BSTree{
 		count:         t.count,
 		root:          nil,
-		base:          make([]interval, 0, 1024),
+		base:          make([]Interval, 0, 1024),
 		min:           t.min,
 		max:           t.max,
 		totalDeltas:   t.totalDeltas,
@@ -255,10 +259,10 @@ func (t *BSTree) Clone() Tree {
 	}
 
 	for _, i := range t.base {
-		nt.base = append(nt.base, interval{
-			id:   i.id,
-			from: i.from,
-			to:   i.to,
+		nt.base = append(nt.base, Interval{
+			ID:   i.ID,
+			From: i.From,
+			To:   i.To,
 		})
 	}
 	return nt

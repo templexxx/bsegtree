@@ -25,6 +25,8 @@ type Tree interface {
 	// Clone this tree to a new one.
 	// Build the new tree before query.
 	Clone() Tree
+
+	GetAll() []Interval
 }
 
 // AbbreviatedKey returns a fixed length prefix of a user key such that AbbreviatedKey(a)

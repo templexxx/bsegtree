@@ -30,7 +30,7 @@ func (t *serial) Query(from, to []byte) []int {
 	result := make([]int, 0, t.estimateIntervals(fa, ta))
 	for _, i := range t.base {
 		if !i.Disjoint(fa, ta) {
-			result = append(result, i.id)
+			result = append(result, i.ID)
 		}
 	}
 	return result
@@ -42,8 +42,8 @@ func (t *serial) QueryPoint(p []byte) []int {
 
 	result := make([]int, 0, t.estimateIntervals(pa, pa))
 	for _, i := range t.base {
-		if i.from <= pa && i.to >= pa {
-			result = append(result, i.id)
+		if i.From <= pa && i.To >= pa {
+			result = append(result, i.ID)
 		}
 	}
 	return result
