@@ -63,8 +63,8 @@ func (t *BSTree) Push(from, to []byte) {
 
 	t.totalDeltas += ta - fa
 
-	if t.totalDeltas != 0 && t.max - t.min != 0 {
-		t.disjointPoint = float64(t.max - t.min) / float64(t.totalDeltas)
+	if t.totalDeltas != 0 && t.max-t.min != 0 {
+		t.disjointPoint = float64(t.max-t.min) / float64(t.totalDeltas)
 	}
 }
 
@@ -110,7 +110,7 @@ func (t *BSTree) Query(from, to []byte) []int {
 
 	cnt := t.estimateIntervals(fa, ta)
 
-	if (cnt >= 48 && t.count <= 1024) || t.count <= 48 {	// If true, serial will be faster.
+	if (cnt >= 48 && t.count <= 1024) || t.count <= 48 { // If true, serial will be faster.
 		result := make([]int, 0, cnt)
 		for _, i := range t.base {
 			if !i.Disjoint(fa, ta) {
@@ -123,7 +123,7 @@ func (t *BSTree) Query(from, to []byte) []int {
 	result := make([]int, 0, cnt)
 
 	var bm bitmap.Bitmap
-	if cnt != 1 {	// There is no need To check repeated result when there will be only 1 interval.
+	if cnt != 1 { // There is no need to check repeated result when there will be only 1 interval.
 		bm = bitmap.New(t.count)
 	}
 
@@ -185,52 +185,6 @@ func querySingle(node *node, from, to uint64, result *[]int, bm *bitmap.Bitmap) 
 func (t *BSTree) QueryPoint(p []byte) []int {
 
 	return t.Query(p, p)
-	//
-	// if t.root == nil {
-	// 	panic("Can't run query on empty tree. Call Build() first")
-	// }
-	//
-	//
-	// pa := AbbreviatedKey(p)
-	// result := make([]int, 0, 1)
-	//
-	// queryPoint(t.root, pa, &result)
-	//
-	// // on small result-set, we check for duplicates without allocation.
-	// // https://github.com/toberndo/go-stree/pull/5/files
-	// if len(result) < 2 || (len(result) == 2 && result[0] != result[1]) || (len(result) == 3 && result[0] != result[1] && result[0] != result[2] && result[1] != result[2]) {
-	// 	return result
-	// }
-	//
-	// // on larger sets, use a map.
-	// m := make(map[int]struct{})
-	// for _, id := range result {
-	// 	m[id] = struct{}{}
-	// }
-	// if len(m) == len(result) {
-	// 	return result
-	// }
-	// result = result[:0]
-	// for id := range m {
-	// 	result = append(result, id)
-	// }
-	//
-	// return result
-}
-
-func queryPoint(node *node, p uint64, result *[]int) {
-
-	if node.from <= p && node.to >= p {
-		for _, i := range node.overlap {
-			*result = append(*result, i.ID)
-		}
-		if node.left != nil {
-			queryPoint(node.left, p, result)
-		}
-		if node.right != nil {
-			queryPoint(node.right, p, result)
-		}
-	}
 }
 
 // Clear reset Tree.
@@ -298,10 +252,10 @@ func (t *BSTree) estimateIntervals(from, to uint64) int {
 	var cnt int
 	if delta == 0 && t.disjointPoint != 0 {
 
-		cnt = int(round(1/ t.disjointPoint, 0))
+		cnt = int(round(1/t.disjointPoint, 0))
 
 	} else {
-		cnt = int((delta*float64(t.count)) / float64(t.max -t.min)) + 1 // +1 for potential cross intervals and point query.
+		cnt = int((delta*float64(t.count))/float64(t.max-t.min)) + 1 // +1 for potential cross intervals and point query.
 	}
 
 	if cnt < 1 {
